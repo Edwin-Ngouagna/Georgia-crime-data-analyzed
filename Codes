@@ -1,0 +1,109 @@
+#Install the needed packages
+
+install.packages("read.xlsx")   #To load excel files
+install.packages("dplyr")       #The almighty dplyr use for data manipulation e.g select, filter, mutatate etc.
+install.packages("epiR")        #Package for descriptive statistics
+install.packages("naniar")      #For exploring missing data
+install.packages("ggplot2")     #For generating charts
+
+
+#Load the installed packages
+library(readxl)
+library(dplyr)
+library(epiR)
+library(ggplot2)
+library(naniar)
+
+
+#Load the data set, skip the first 4 rows because they are empty
+Georgia_crime <- read_excel("D:/DATA SCIENCE/R/Georgia_crime.xls", skip = 4)
+
+#view the entire data
+View(Georgia_crime)
+
+#View just the first six rows i.e. the head
+head(Georgia_crime)
+
+#confirm the type
+typeof(Georgia_crime)
+
+#check the class
+class(Georgia_crime)
+
+#Rename Georgia_crime to df
+df <- Georgia_crime
+
+#check for the number of missing values in each variable of the data set
+apply(X = is.na(df), MARGIN = 2, FUN = sum)
+
+# Visualize the missing values
+plot1 <- vis_miss(df)
+plot1  
+# The results give us the percentage of missing data for each variable, we can ignore from 0 - 5% such as it is the case here,
+# no variable has more than 5% of missing values.
+
+# Remove the last 3 rows; they are empty
+df <- slice(df, 1:(n() -3))
+tail(df)
+
+# remove the data where Murder and nonnegligent manslaughter = 0
+
+df1 <- filter(df, Murder_and_non_negligent_manslaughter > 0)
+head(df1)
+
+# leave only data where Population is less than or equal to 150,000
+df1 <- filter(Population <= 150000)
+head(df1)
+
+
+# rename some columns
+df1 <- rename(df1, Murder = Murder_and_non_negligent_manslaughter, Pop = Population,)
+head(df1)
+
+#Some exploration
+glimpse(df1)
+summary(df1)
+epi.descriptives(df1$Murder)
+epi.descriptives(df1$Pop)
+
+#Normality test
+shapiro.test(df1$Murder)
+shapiro.test(df1$Pop)
+hist(df1$Murder, xlab = "Murder rate", main = 'Histogram of Muder rate')
+# The histogram is skewed to th right.
+
+#Linearity assumption
+L1 <- lowess(df1$Pop, df1$Murder, f=2/3, delta = 0.01)
+plot(df1$Pop, df1$Murder, xlab = "Population", ylab = "Murder rate", main = 
+       "Murder rate Vs Population")
+lines(x= L1$x, y= L1$y, col= "red")
+
+# Data transformation
+df1 = mutate(df1, lmurder = log(Murder), lpop = log(Pop))
+
+#Check again for normality and linearity
+shapiro.test(df1$lmurder) # Not normal still (p <0.05)
+shapiro.test(df1$lpop) # Normal (p > 0.05)
+hist(df1$lmurder, xlab = "Murder rate", main = 'Histogram of Muder rate')
+hist(df1$lpop, xlab = "Population", main = 'Histogram of Population')
+
+#Linearity assumption again
+L1 <- lowess(df1$lpop, df1$lmurder, f=2/3, delta = 0.01)
+plot(df1$lpop, df1$lmurder, xlab = "Log of Population", ylab = "Log of Murder rate", main = 
+       "Murder rate Vs Population")
+lines(x= L1$x, y= L1$y, col= "red")
+#The rate of murder increases with population but let's confirm it with a linear model
+
+#Simple linear regression
+lm_murder <- lm(lmurder ~ lpop, data = df1)
+lm_murder
+lm_summary <- summary(lm_murder)
+
+#Interpretation
+#The slope is 0.47 meaning murder rate increase by a factor of 0.4 for every 1 unit increase in Lop pop
+# p if far less than 0.05 thus the rate of murder indeed increases with population
+
+#How much variation in Murder rate is explained by the population?
+lm_summary$r.s #36%, this means 36% of the variation in log Murder is explained by log Pop; log because
+               # we transformed the data since it wasn't normally distributed.
+
