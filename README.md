@@ -6,7 +6,7 @@ In analysis, I sought to know the:<br>
 1.	If there is a linear relationship between population (specifically where population ≤150,000) and murder rate in Georgia.<br>
 
 Hypothesis<br>
-Ho – There are no significant linear relationship between population (specifically where population ≤150,000) and murder rate in Georgia.<br>
+Ho – There is no significant linear relationship between population (specifically where population ≤150,000) and murder rate in Georgia.<br>
 
 Analysis<br>
 The data was analyzed using R statistical software version 4.2.1.<br>
